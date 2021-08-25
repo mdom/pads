@@ -1,0 +1,146 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use 5.014;
+use Mojo::UserAgent;
+use Getopt::Long qw(GetOptions);
+use Pod::Usage;
+
+my $version = '1.2.11';
+my $ua      = Mojo::UserAgent->new;
+
+my $opts = {
+    port => 9001,
+    host => 'localhost',
+};
+
+GetOptions( $opts, 'port=i', 'host=s', 'key=s', 'h|help!', );
+
+pod2usage( -exitval => 1 ) if $opts->{help};
+
+my $mode = shift;
+
+my %modes = (
+    list      => [ \&listAllPads,       0 ],
+    rev       => [ \&getRevisionsCount, 1 ],
+    backup    => [ \&backup,            1 ],
+    setHTML   => [ \&setHTML,           1 ],
+    getHTML   => [ \&getHTML,           1 ],
+    setText   => [ \&setText,           1 ],
+    getText   => [ \&getText,           1 ],
+    createPad => [ \&createPad,         1 ],
+);
+
+if ( $mode and exists $modes{$mode} ) {
+    pod2usage( -exitval => 1 ) if $modes{$mode}->[1] != @ARGV;
+    $modes{$mode}->[0]->(@ARGV);
+}
+else {
+    pod2usage( -exitval => 1 );
+}
+
+sub listAllPads {
+    say for @{ api('listAllPads')->{data}->{padIDs} };
+}
+
+sub getRevisionsCount {
+    my $pad = shift;
+    say api( 'getRevisionsCount', padID => $pad )->{data}->{revisions};
+}
+
+sub setHTML {
+    my $pad = shift;
+    my $html = do { local ($/); <STDIN> };
+    api( 'setHTML', padID => $pad, html => $html );
+}
+
+sub createPad {
+    my $pad = shift;
+    api( 'createPad', padID => $pad );
+}
+
+sub setText {
+    my $pad = shift;
+    my $text = do { local ($/); <STDIN> };
+    api( 'setText', padID => $pad, text => $text );
+}
+
+sub getHTML {
+    my $pad = shift;
+    say api( 'getHTML', padID => $pad )->{data}->{html};
+}
+
+sub getText {
+    my $pad = shift;
+    print api( 'getText', padID => $pad )->{data}->{text};
+}
+
+sub backup {
+    my $path = shift;
+
+    $path = Mojo::File->new($path);
+
+    if ( !-d $path ) {
+        pod2usage(
+            -exitval => 1,
+            -verbose => 0,
+            -msg     => "$path does not exist"
+        );
+    }
+
+    for my $pad ( @{ api('listAllPads')->{data}->{padIDs} } ) {
+        my $html   = api( 'getHTML', padID => $pad )->{data}->{html};
+        my $handle = $path->child("$pad.html")->open('>:encoding(UTF-8)');
+        print $handle $html;
+    }
+}
+
+exit 0;
+
+sub api {
+    my $path = shift;
+    my $args = {@_};
+    my $port = $opts->{port};
+    my $host = $opts->{host};
+    $args->{apikey} = $ENV{ETHERPAD_APIKEY} || $opts->{key};
+    my $url = Mojo::URL->new("http://$host:$port/api/$version/$path");
+
+    my $res = $ua->post( $url, form => $args )->result;
+    if ( $res->is_success ) {
+        my $json = $res->json;
+        if ( $json->{code} != 0 ) {
+            die $json->{message}, "\n";
+        }
+        return $json;
+    }
+    elsif ( $res->is_error ) { die $res->message }
+    else                     { die 'Whatever...' }
+}
+
+__END__
+
+=head1 NAME
+
+pads - Manage etherpad from the command line
+
+=head1 SYNOPSIS
+
+pads [options] mode [args ...]
+
+=head2 Options
+
+  --port PORT       port of api endpoint (defualts to 9001)
+  --host HOST       host of api endpoint (defaults to localhost)
+  --key KEY         apikey to use (defaults to $ENV{ETHERPAD_APIKEY})
+
+=head2 Modes
+
+  backup DIR        backup all pads as html to DIR
+  rev PAD           print last revision of PAD
+  list              list all pads
+  getText PAD       print text of PAD
+  setText PAD       sets the text (read from stdin) of a PAD
+  getHTML PAD       print text of PAD as HTML
+  setHTML PAD       sets the text (read from stdin) of a PAD based on HTML
+  createPad PAD     creates a new pad

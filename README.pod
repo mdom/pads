@@ -1,0 +1,23 @@
+=head1 NAME
+
+pads - Manage etherpad from the command line
+
+=head1 SYNOPSIS
+
+pads [options] mode [args ...]
+
+=head2 Options
+
+  --port            port of api endpoint (defualt to 9001)
+  --host            host of api endpoint (default to localhost)
+
+=head2 Modes
+
+  backup DIR        backup all pads as html to DIR
+  rev PAD           print last revision of PAD
+  list              list all pads
+  getText PAD       print text of PAD
+  setText PAD       sets the text (read from stdin) of a PAD
+  getHTML PAD       print text of PAD as HTML
+  setHTML PAD       sets the text (read from stdin) of a PAD based on HTML
+  createPad PAD     creates a new pad
