@@ -22,15 +22,16 @@ pod2usage( -exitval => 1 ) if $opts->{help};
 my $mode = shift;
 
 my %modes = (
-    list       => [ \&listAllPads,       0 ],
-    rev        => [ \&getRevisionsCount, 1 ],
-    saved-rev  => [ \&getRevisionsCount, 1 ],
-    backup     => [ \&backup,            1 ],
-    set-html   => [ \&setHTML,           1 ],
-    get-thtml  => [ \&getHTML,           1 ],
-    set-text   => [ \&setText,           1 ],
-    get-text   => [ \&getText,           1 ],
-    create-pad => [ \&createPad,         1 ],
+    list        => [ \&listAllPads,       0 ],
+    rev         => [ \&getRevisionsCount, 1 ],
+    saved-rev   => [ \&getRevisionsCount, 1 ],
+    backup      => [ \&backup,            1 ],
+    set-html    => [ \&setHTML,           1 ],
+    get-thtml   => [ \&getHTML,           1 ],
+    set-text    => [ \&setText,           1 ],
+    get-text    => [ \&getText,           1 ],
+    append-text => [ \&appendText,        1 ],
+    create-pad  => [ \&createPad,         1 ],
 );
 
 if ( $mode and exists $modes{$mode} ) {
@@ -65,6 +66,12 @@ sub setText {
     my $pad  = shift;
     my $text = do { local ($/); <STDIN> };
     api( 'setText', padID => $pad, text => $text );
+}
+
+sub appendText {
+    my $pad  = shift;
+    my $text = do { local ($/); <STDIN> };
+    api( 'appendText', padID => $pad, text => $text );
 }
 
 sub getHTML {
@@ -142,6 +149,7 @@ pads [options] mode [args ...]
   list              list all pads
   get-text PAD      print text of PAD
   set-text PAD      set text of PAD from stdin
+  append-text PAD   append text to PAD from stdin
   get-html PAD      print text of PAD as HTML
   set-html PAD      set the text of PAD as HTML from stdin
   create-pad PAD    create a pad named PAD
