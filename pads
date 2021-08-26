@@ -50,7 +50,7 @@ sub getRevisionsCount {
 }
 
 sub setHTML {
-    my $pad = shift;
+    my $pad  = shift;
     my $html = do { local ($/); <STDIN> };
     api( 'setHTML', padID => $pad, html => $html );
 }
@@ -61,7 +61,7 @@ sub createPad {
 }
 
 sub setText {
-    my $pad = shift;
+    my $pad  = shift;
     my $text = do { local ($/); <STDIN> };
     api( 'setText', padID => $pad, text => $text );
 }
